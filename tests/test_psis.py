@@ -97,10 +97,10 @@ class TestIndicesComputation(unittest.TestCase):
         input_positive = np.array(['sample1'])
         input_formula = 'median'
 
-        expected_psi_p = 0.6857;
-        expected_psi_roc = 0.6250;
-        expected_psi_pr = 0.6673;
-        expected_psi_mcc = 0.0000;
+        expected_psi_p = 0.6857
+        expected_psi_roc = 0.6250
+        expected_psi_pr = 0.6673
+        expected_psi_mcc = 0.0000
 
         actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
                                                                                            input_labels,
