@@ -6,7 +6,8 @@ from sklearn import metrics
 
 def _mode_distribution(data_clustered):
     mode_dist = np.empty([0])
-    for ix in range(data_clustered.ndim):
+    _, dims = data_clustered.shape
+    for ix in range(dims):
         kde = stats.gaussian_kde(data_clustered[:, ix])
         xi = np.linspace(data_clustered.min(), data_clustered.max(), 100)
         p = kde(xi)
@@ -57,7 +58,7 @@ def _create_line_between_centroids(centroid1, centroid2):
     return line
 
 
-def __project_points_on_line(point, line):
+def _project_points_on_line(point, line):
     # centroids
     a = line[0]
     b = line[1]
@@ -72,18 +73,20 @@ def __project_points_on_line(point, line):
     return projected_point
 
 
-def __convert_points_to_one_dimension(points):
+def _convert_points_to_one_dimension(points):
     start_point = None
-    for ix in range(points.ndim):
+    _, dims = points.shape
+
+    for ix in range(dims):
         if np.unique(points[:, ix]).size != 1:
-            start_point = np.array(points[np.argmin(points[:, ix], axis=0), :]).reshape(1, points.ndim)
+            start_point = np.array(points[np.argmin(points[:, ix], axis=0), :]).reshape(1, dims)
             break
 
     if start_point is None:
         raise RuntimeError('impossible to set projection starting point')
 
     v = np.zeros(np.shape(points)[0])
-    for ix in range(points.ndim):
+    for ix in range(dims):
         v = np.add(v, np.power(points[:, ix] - np.min(start_point[:, ix]), 2))
 
     v = np.sqrt(v)
@@ -92,7 +95,7 @@ def __convert_points_to_one_dimension(points):
 
 
 def _compute_mannwhitney(scores_c1, scores_c2):
-    mw = stats.mannwhitneyu(scores_c1, scores_c2, method="exact")
+    mw = stats.mannwhitneyu(scores_c1, scores_c2)  # method="exact"
     return mw
 
 
@@ -156,18 +159,21 @@ def compute_null_model(data_matrix, sample_labels, positive_classes=None, center
 
 def compute_indices(data_matrix, sample_labels, positive_classes=None, center_formula='median'):
     # TODO: Validate numpy arrays and non-empty args
+
     if positive_classes is None:
         positive_classes = _find_positive_classes(sample_labels)
     if center_formula != 'mean' and center_formula != 'median' and center_formula != 'mode':
         warnings.warn('invalid center formula: median will be applied')
         center_formula = 'median'
 
+    # checking range of dimensions
+    total_samples, dimensions_number = data_matrix.shape
+    if len(sample_labels) != total_samples:
+        raise RuntimeError("the number of sample labels does not match the number of rows in the matrix")
+
     # obtaining unique sample labels
     unique_labels = np.unique(sample_labels)
     number_unique_labels = len(unique_labels)
-
-    # checking range of dimensions
-    dimensions_number = data_matrix.ndim
 
     # clustering data according to sample labels
     sorted_labels = np.empty([0], dtype=str)
@@ -208,16 +214,16 @@ def compute_indices(data_matrix, sample_labels, positive_classes=None, center_fo
         clusters_projections[n] = clusters_projections[m] = np.empty([0, dimensions_number])
 
         for o in range(np.shape(data_clustered[n])[0]):
-            proj = __project_points_on_line(data_clustered[n][o], clusters_line)
+            proj = _project_points_on_line(data_clustered[n][o], clusters_line)
             clusters_projections[n] = np.vstack([clusters_projections[n], proj])
         for o in range(np.shape(data_clustered[m])[0]):
-            proj = __project_points_on_line(data_clustered[m][o], clusters_line)
+            proj = _project_points_on_line(data_clustered[m][o], clusters_line)
             clusters_projections[m] = np.vstack([clusters_projections[m], proj])
 
         size_cluster_n = len(data_clustered[n])
         size_cluster_m = len(data_clustered[m])
 
-        cluster_projection_1d = __convert_points_to_one_dimension(
+        cluster_projection_1d = _convert_points_to_one_dimension(
             np.vstack([clusters_projections[n], clusters_projections[m]]))
 
         dp_scores_cluster_1 = cluster_projection_1d[0:size_cluster_n]
