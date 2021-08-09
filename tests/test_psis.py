@@ -1,14 +1,8 @@
 import unittest
 import numpy as np
 
-from psis import __version__
-from psis import psis
-
+from psis import indices
 from tests import sample_data
-
-
-def test_version():
-    assert __version__ == '0.1.0'
 
 
 class TestNullModelComputation(unittest.TestCase):
@@ -19,7 +13,7 @@ class TestNullModelComputation(unittest.TestCase):
         iterations = 50
         seed = 100
 
-        model = psis.compute_null_model(matrix, labels, positives, formula, iterations=iterations, seed=seed)
+        model = indices.compute_null_model(matrix, labels, positives, formula, iterations=iterations, seed=seed)
 
         # psi-p
         self.assertEqual(1.2428266254044471e-40, model['psi_p']['value'])
@@ -64,7 +58,8 @@ class TestIndicesComputation(unittest.TestCase):
         expected_psi_pr = 1.0000
         expected_psi_mcc = 1.0000
 
-        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = psis.compute_indices(input_matrix, input_labels,
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
                                                                                            input_positive,
                                                                                            input_formula)
 
@@ -85,7 +80,8 @@ class TestIndicesComputation(unittest.TestCase):
         expected_psi_pr = 0.5015
         expected_psi_mcc = 0.5000
 
-        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = psis.compute_indices(input_matrix, input_labels,
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
                                                                                            input_positive,
                                                                                            input_formula)
 
@@ -101,12 +97,13 @@ class TestIndicesComputation(unittest.TestCase):
         input_positive = np.array(['sample1'])
         input_formula = 'median'
 
-        expected_psi_p = 0.6857;
-        expected_psi_roc = 0.6250;
-        expected_psi_pr = 0.6673;
-        expected_psi_mcc = 0.0000;
+        expected_psi_p = 0.6857
+        expected_psi_roc = 0.6250
+        expected_psi_pr = 0.6673
+        expected_psi_mcc = 0.0000
 
-        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = psis.compute_indices(input_matrix, input_labels,
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
                                                                                            input_positive,
                                                                                            input_formula)
 
@@ -127,7 +124,8 @@ class TestIndicesComputation(unittest.TestCase):
         expected_psi_pr = 1.0000
         expected_psi_mcc = 1.0000
 
-        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = psis.compute_indices(input_matrix, input_labels,
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
                                                                                            input_positive,
                                                                                            input_formula)
 
@@ -148,7 +146,8 @@ class TestIndicesComputation(unittest.TestCase):
         expected_psi_pr = 1.0000
         expected_psi_mcc = 1.0000
 
-        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = psis.compute_indices(input_matrix, input_labels,
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
                                                                                            input_positive,
                                                                                            input_formula)
 
@@ -169,7 +168,8 @@ class TestIndicesComputation(unittest.TestCase):
         expected_psi_pr = 1.0000
         expected_psi_mcc = 1.0000
 
-        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = psis.compute_indices(input_matrix, input_labels,
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
                                                                                            input_positive)
 
         self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
@@ -187,7 +187,8 @@ class TestIndicesComputation(unittest.TestCase):
         expected_psi_pr = 1.0000
         expected_psi_mcc = 1.0000
 
-        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = psis.compute_indices(input_matrix, input_labels)
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels)
 
         self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
         self.assertEqual(expected_psi_roc, round(actual_psi_roc, 4))
@@ -202,10 +203,15 @@ class TestIndicesComputation(unittest.TestCase):
         expected_psi_pr = 0.713
         expected_psi_mcc = 0.4207
 
-        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = psis.compute_indices(input_matrix, input_labels,
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
                                                                                            center_formula='mean')
 
         self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
         self.assertEqual(expected_psi_roc, round(actual_psi_roc, 4))
         self.assertEqual(expected_psi_pr, round(actual_psi_pr, 4))
         self.assertEqual(expected_psi_mcc, round(actual_psi_mcc, 4))
+
+
+if __name__ == '__main__':
+    unittest.main()
