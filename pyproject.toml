@@ -1,15 +1,8 @@
-[tool.poetry]
-name = "psis"
-version = "0.1.0"
-description = ""
-authors = ["Aldo Acevedo <aldo.acevedo.toledo@gmail.com>"]
-
-[tool.poetry.dependencies]
-python = "^3.8"
-
-[tool.poetry.dev-dependencies]
-pytest = "^5.2"
-
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = [
+    "setuptools>=45",
+    "wheel",
+    "setuptools_scm[toml]>=6.0"
+]
+build-backend = "setuptools.build_meta"
+[tool.setuptools_scm]
