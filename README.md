@@ -1,10 +1,13 @@
 # Projection Separability Indices
 
-*This python package is based on the MATLAB project named [projection-separability-indices](https://github.com/biomedical-cybernetics/projection-separability-indices).*
+*This python package is based on the MATLAB project
+named [projection-separability-indices](https://github.com/biomedical-cybernetics/projection-separability-indices).*
 
 ## Description
 
-The projection separability indices (PSIs) are statistical-based measures specifically designed to assess and quantify the group separability of data samples in a geometrical space of dimensionality reduction analyses based on embedding algorithms. Currently, this package implements four different PSIs for evaluating group separability:
+The projection separability indices (PSIs) are statistical-based measures specifically designed to assess and quantify
+the group separability of data samples in a geometrical space of dimensionality reduction analyses based on embedding
+algorithms. Currently, this package implements four different PSIs for evaluating group separability:
 
 * **psi-p**: Based on Mann-Whitney U-test p-value [1]
 * **psi-roc**: Based on Area Under the ROC-Curve [2]
@@ -12,18 +15,18 @@ The projection separability indices (PSIs) are statistical-based measures specif
 * **psi-mcc**: Based on the Matthews Correlation Coefficient [4]
 
 > [1] H. B. Mann and D. R. Whitney, “On a Test of Whether one of Two Random Variables is Stochastically Larger than the Other,” Ann. Math. Stat., vol. 18, no. 1, pp. 50–60, 1947, doi: 10.1214/aoms/1177730491.
-> 
+>
 > [2] J. S. Hanley and B. J. McNeil, “The Meaning and Use of the Area under a Receiver Operating Characteristic (ROC) Curve,” Radiology, vol. 143, no. 1, pp. 29–36, 1982.
-> 
+>
 > [3] V. Raghavan, P. Bollmann, and G. S. Jung, “A critical investigation of recall and precision as measures of retrieval system performance,” ACM Trans. Inf. Syst., vol. 7, no. 3, pp. 205–229, 1989, doi: 10.1145/65943.65945.
-> 
+>
 > [4] B. W. Matthews, “Comparison of the predicted and observed secondary structure of T4 phage lysozyme,” BBA - Protein Struct., vol. 405, no. 2, pp. 442–451, 1975, doi: 10.1016/0005-2795(75)90109-9.
 
 ## Installation
 
 Run the following to install:
 
-```python
+```shell
 pip install psis
 ```
 
@@ -33,7 +36,7 @@ pip install psis
 
 ```python
 import numpy as np
-from psis import compuete
+from psis import indices
 
 """
 Simulated embedding obtained by a dimension reduction method.
@@ -74,7 +77,7 @@ Available options are:
 center_formula = 'median'
 
 # Group separability evaluation
-psi_p, psi_roc, psi_pr, psi_mcc = psis.compute_indices(embedding, labels, positives, center_formula)
+psi_p, psi_roc, psi_pr, psi_mcc = indices.compute_psis(embedding, labels, positives, center_formula)
 
 print(psi_p)
 print(psi_roc)
@@ -85,23 +88,32 @@ print(psi_mcc)
 ### Computing null model
 
 ```python
-import numpy as np
-from psis import geometrical_separability_index
+from sklearn.datasets import load_iris
+from psis import indices
 
+# Sample data. Details at: https://scikit-learn.org/stable/datasets/toy_dataset.html
+data = load_iris()
 
+# Number of iteration for the Null model
+iterations = 50
 
-iterations = 100
-
-"""
-
-"""
+# Random seed (for reproducibility)
 seed = 10
 
-# Group separability evaluation
-psi_p, psi_roc, psi_pr, psi_mcc = psis.compute_indices(embedding, labels, positives, center_formula)
+# Group separability evaluation.
+# In this example, the evaluation of group separability is directly
+# assessed in the High-Dimensional (HD) space
+results = indices.compute_null_model(data.data, data.target, iterations=iterations, seed=seed)
 
-print(psi_p)
-print(psi_roc)
-print(psi_pr)
-print(psi_mcc)
+# Accessing the results
+# In this example only 'psi_roc' is evaluated. The other indices' results can be 
+# accessed in the same way
+print(results['psi_roc']['value']) # Initial index value
+print(results['psi_roc']['min']) # Minimum permuted value
+print(results['psi_roc']['max']) # Maximum permuted value
+print(results['psi_roc']['p_value']) # Separability significance (p-value)
 ```
+
+## Issues
+
+Please, report any issue at [psis/issues](https://github.com/biomedical-cybernetics/pypsis/issues)

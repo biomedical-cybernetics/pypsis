@@ -114,7 +114,7 @@ def _compute_auc_aupr(labels, scores, positives):
 
 def compute_null_model(data_matrix, sample_labels, positive_classes=None, center_formula='median', iterations=1,
                        seed=None):
-    psi_p, psi_roc, psi_pr, psi_mcc = compute_indices(data_matrix, sample_labels, positive_classes, center_formula)
+    psi_p, psi_roc, psi_pr, psi_mcc = compute_psis(data_matrix, sample_labels, positive_classes, center_formula)
     initial_values = dict(psi_p=psi_p, psi_roc=psi_roc, psi_pr=psi_pr, psi_mcc=psi_mcc)
 
     total_samples = len(sample_labels)
@@ -126,8 +126,8 @@ def compute_null_model(data_matrix, sample_labels, positive_classes=None, center
     for ix in range(iterations):
         permuted_positions = np.random.permutation(total_samples)
         permuted_samples = sample_labels[permuted_positions]
-        perm_p, perm_roc, perm_pr, perm_mcc = compute_indices(data_matrix, permuted_samples, positive_classes,
-                                                              center_formula)
+        perm_p, perm_roc, perm_pr, perm_mcc = compute_psis(data_matrix, permuted_samples, positive_classes,
+                                                           center_formula)
         permutations['psi_p'] = np.append(permutations['psi_p'], perm_p)
         permutations['psi_roc'] = np.append(permutations['psi_roc'], perm_roc)
         permutations['psi_pr'] = np.append(permutations['psi_pr'], perm_pr)
@@ -157,7 +157,7 @@ def compute_null_model(data_matrix, sample_labels, positive_classes=None, center
     return model_results
 
 
-def compute_indices(data_matrix, sample_labels, positive_classes=None, center_formula='median'):
+def compute_psis(data_matrix, sample_labels, positive_classes=None, center_formula='median'):
     # TODO: Validate numpy arrays and non-empty args
 
     if positive_classes is None:
