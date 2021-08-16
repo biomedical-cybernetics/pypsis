@@ -46,6 +46,53 @@ class TestTrustworthinessComputation(unittest.TestCase):
 
 class TestIndicesComputation(unittest.TestCase):
 
+    def test_wrong_inputs(self):
+        cases = [
+            # wrong matrix
+            {
+                'matrix': [[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]],
+                'labels': np.array(
+                    ['sample1', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample2']),
+                'positives': np.array(['sample1']),
+                'center': 'median'
+            },
+            # wrong labels
+            {
+                'matrix': np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]]),
+                'labels': list(
+                    ['sample1', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample2']),
+                'positives': np.array(['sample1']),
+                'center': 'median'
+            },
+            # wrong positives
+            {
+                'matrix': np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]]),
+                'labels': np.array(
+                    ['sample1', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample2']),
+                'positives': 'sample1',
+                'center': 'median'
+            }
+        ]
+
+        for case in cases:
+            self.assertRaises(
+                TypeError,
+                indices.compute_psis,
+                case['matrix'],
+                case['labels'],
+                case['positives'],
+                case['center']
+            )
+
+    def test_wrong_center_formula(self):
+        input_matrix = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
+        input_labels = np.array(
+            ['sample1', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample2'])
+        input_positive = np.array(['sample1'])
+        input_formula = 'fake-formula'
+
+        self.assertWarns(SyntaxWarning, indices.compute_psis, input_matrix, input_labels, input_positive, input_formula)
+
     def test_perfect_separation(self):
         input_matrix = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
         input_labels = np.array(
@@ -170,7 +217,8 @@ class TestIndicesComputation(unittest.TestCase):
 
         actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
                                                                                            input_labels,
-                                                                                           input_positive)
+                                                                                           input_positive,
+                                                                                           input_formula)
 
         self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
         self.assertEqual(expected_psi_roc, round(actual_psi_roc, 4))

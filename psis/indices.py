@@ -114,6 +114,80 @@ def _compute_auc_aupr(labels, scores, positives):
 
 def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, center_formula='median', iterations=1,
                             seed=None):
+    """Compute the trustworthiness of all projection separability indices (PSIs) based on a null model
+
+    Parameters
+    ----------
+    data_matrix: numpy.ndarray
+        Data in form of a N*M array where the samples are placed in the rows and
+        the features/variables are placed in the columns.
+        Usually, this is the output of a dimension reduction algorithm in a low-dimensional space; however,
+        high-dimensional entries can also be evaluated.
+    sample_labels: numpy.ndarray
+        List of sample labels (ground truth groups/classes) of the data.
+    positive_classes: numpy.ndarray
+        List of positive labels. Depending on the study, positive classes are usually ranked as
+        the labels for which a particular prediction is desired.
+        For instance:
+            - sick patients (positive class) versus controls (negative class)
+            - burnout (positive class), depression (positive class), versus control (negative class)
+        If not provided, then the algorithm will take the groups with the lower number of samples as
+        positive classes.
+    center_formula: str
+        Base approach for finding the groups centroids.
+        Options are:
+            - mean
+            - median [default]:
+            - mode
+        If an invalid center formula is inputted, then median will be applied by default
+    iterations: int
+        Number of iterations for the null model
+    seed: int
+        Random seed (optional for reproducibility)
+
+    Returns
+    -------
+    model_results: dict
+        Nested dictionary will all null model results. The results can be accessed via index name. For instance:
+        results['psi_p'] will access all results for the projection separability index based on the Mann-Whitney
+        U-test p-value. The internal fields are the following:
+            - value: float64
+                Initial value of the index calculated before the null model
+            - permutations: numpy.ndarray
+                List of all permuted index values
+            - max: float64
+                Maximum permuted index value
+            - min: float64
+                Minimum permuted index value
+            - std: float64
+                Standard deviation of the permuted index values
+            - p_value: float64
+                Trustworthiness of the initial index value expressed as p-value
+
+    Raises
+    -------
+    ValueError:
+        - If the provided number of iterations is lower or equal than zero
+    TypeError:
+        - If either data_matrix, sample_labels, or positive_classes have a wrong data type
+    IndexError:
+        - If the number of sample labels does not match the number of rows in the data matrix
+    RuntimeError:
+        - If no centroids can be found based on the given center formula
+        - If the groups/clusters have the exactly same centroid and no line can be traced between them
+        - If the a positive class cannot be found for a pairwise group evaluation
+        - If a reference/starting point cannot for generating the projection cannot not be found
+
+    Warnings
+    -------
+    warn:
+        - If an invalid center formula is inputted
+
+    """
+
+    if iterations <= 0:
+        raise ValueError("invalid number of iterations: it must be a positive number higher than zero")
+
     psi_p, psi_roc, psi_pr, psi_mcc = compute_psis(data_matrix, sample_labels, positive_classes, center_formula)
     initial_values = dict(psi_p=psi_p, psi_roc=psi_roc, psi_pr=psi_pr, psi_mcc=psi_mcc)
 
@@ -158,18 +232,82 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
 
 
 def compute_psis(data_matrix, sample_labels, positive_classes=None, center_formula='median'):
-    # TODO: Validate numpy arrays and non-empty args
+    """Compute all projection separability indices (PSIs)
+
+    Parameters
+    ----------
+    data_matrix: numpy.ndarray
+        Data in form of a N*M array where the samples are placed in the rows and
+        the features/variables are placed in the columns.
+        Usually, this is the output of a dimension reduction algorithm in a low-dimensional space; however,
+        high-dimensional entries can also be evaluated.
+    sample_labels: numpy.ndarray
+        List of sample labels (ground truth groups/classes) of the data.
+    positive_classes: numpy.ndarray
+        List of positive labels. Depending on the study, positive classes are usually ranked as
+        the labels for which a particular prediction is desired.
+        For instance:
+            - sick patients (positive class) versus controls (negative class)
+            - burnout (positive class), depression (positive class), versus control (negative class)
+        If not provided, then the algorithm will take the groups with the lower number of samples as
+        positive classes.
+    center_formula: str
+        Base approach for finding the groups centroids.
+        Options are:
+            - mean
+            - median [default]:
+            - mode
+        If an invalid center formula is inputted, then median will be applied by default
+
+    Returns
+    -------
+    psi_p: float64
+        Projection separability index value based on the Mann-Whitney U-test p-value.
+    psi_roc: float64
+        Projection separability index value based on the Area Under the ROC-Curve.
+    psi_pr: float64
+        Projection separability index value based on the Area Under the Precision-Recall Curve.
+    psi_mcc: float64
+        Projection separability index value based on the Matthews Correlation Coefficient.
+
+    Raises
+    -------
+    TypeError:
+        - If either data_matrix, sample_labels, or positive_classes have a wrong data type
+    IndexError:
+        - If the number of sample labels does not match the number of rows in the data matrix
+    RuntimeError:
+        - If no centroids can be found based on the given center formula
+        - If the groups/clusters have the exactly same centroid and no line can be traced between them
+        - If the a positive class cannot be found for a pairwise group evaluation
+        - If a reference/starting point cannot for generating the projection cannot not be found
+
+    Warnings
+    -------
+    warn:
+        - If an invalid center formula is inputted
+
+    """
+    # sanity checks
+    if type(data_matrix) is not np.ndarray:
+        raise TypeError("invalid input type: the data_matrix must be a numpy.ndarray")
+
+    if type(sample_labels) is not np.ndarray:
+        raise TypeError("invalid input type: the sample_labels must be a numpy.ndarray")
 
     if positive_classes is None:
         positive_classes = _find_positive_classes(sample_labels)
+    elif type(positive_classes) is not np.ndarray:
+        raise TypeError("invalid input type: the positive_classes must be a numpy.ndarray")
+
     if center_formula != 'mean' and center_formula != 'median' and center_formula != 'mode':
-        warnings.warn('invalid center formula: median will be applied')
+        warnings.warn('invalid center formula: median will be applied', SyntaxWarning)
         center_formula = 'median'
 
     # checking range of dimensions
     total_samples, dimensions_number = data_matrix.shape
     if len(sample_labels) != total_samples:
-        raise RuntimeError("the number of sample labels does not match the number of rows in the matrix")
+        raise IndexError("the number of sample labels does not match the number of rows in the data matrix")
 
     # obtaining unique sample labels
     unique_labels = np.unique(sample_labels)
