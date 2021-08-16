@@ -10,14 +10,16 @@ the group separability of data samples in a geometrical space (
 see [Measuring group-separability in geometrical space for evaluation of pattern recognition and embedding algorithms](https://arxiv.org/abs/1912.12418)
 for more details). For instance, PSIs can be used to evaluate the quality of the dimensionality reduction analyses
 produced by embedding algorithms. Currently, this package implements four different PSIs for evaluating group
-separability and a statistical test termed _trustworthiness_ (see [Nonlinear machine learning pattern recognition and bacteria-metabolite multilayer network analysis of perturbed gastric microbiome](https://www.nature.com/articles/s41467-021-22135-x)
-for a practical example and more details) which is based on a null model to assess the statistical significance of each PSI by a p-value.
+separability and a statistical test termed _trustworthiness_ (
+see [Nonlinear machine learning pattern recognition and bacteria-metabolite multilayer network analysis of perturbed gastric microbiome](https://www.nature.com/articles/s41467-021-22135-x)
+for a practical example and more details) which is based on a null model to assess the statistical significance of each
+PSI by a p-value.
 
 ### PSI measures
 
-* **psi-p**: Based on Mann-Whitney U-test p-value [1]
-* **psi-roc**: Based on Area Under the ROC-Curve [2]
-* **psi-pr**: Based on Area Under the Precision-Recall Curve [3]
+* **psi-p**: Based on the Mann-Whitney U-test p-value [1]
+* **psi-roc**: Based on the Area Under the ROC-Curve [2]
+* **psi-pr**: Based on the Area Under the Precision-Recall Curve [3]
 * **psi-mcc**: Based on the Matthews Correlation Coefficient [4]
 
 > [1] H. B. Mann and D. R. Whitney, “On a Test of Whether one of Two Random Variables is Stochastically Larger than the Other,” Ann. Math. Stat., vol. 18, no. 1, pp. 50–60, 1947, doi: 10.1214/aoms/1177730491.
@@ -47,7 +49,8 @@ from psis import indices
 """
 Simulated embedding obtained by a dimension reduction method.
 In this example, only two dimensions are used. however, an arbitrary 
-number of dimensions can be evaluated
+number of dimensions can be evaluated.
+Note: It is expected to receive samples as rows and the features/variables as columns.
 """
 embedding = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
 
