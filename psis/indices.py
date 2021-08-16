@@ -112,8 +112,8 @@ def _compute_auc_aupr(labels, scores, positives):
     return auc, aupr
 
 
-def compute_null_model(data_matrix, sample_labels, positive_classes=None, center_formula='median', iterations=1,
-                       seed=None):
+def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, center_formula='median', iterations=1,
+                            seed=None):
     psi_p, psi_roc, psi_pr, psi_mcc = compute_psis(data_matrix, sample_labels, positive_classes, center_formula)
     initial_values = dict(psi_p=psi_p, psi_roc=psi_roc, psi_pr=psi_pr, psi_mcc=psi_mcc)
 

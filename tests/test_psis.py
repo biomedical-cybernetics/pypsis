@@ -5,15 +5,15 @@ from psis import indices
 from tests import sample_data
 
 
-class TestNullModelComputation(unittest.TestCase):
+class TestTrustworthinessComputation(unittest.TestCase):
 
-    def test_null_model(self):
+    def test_trustworthiness(self):
         matrix, labels, positives = sample_data._swiss_roll_sample_data()
         formula = 'median'
         iterations = 50
         seed = 100
 
-        model = indices.compute_null_model(matrix, labels, positives, formula, iterations=iterations, seed=seed)
+        model = indices.compute_trustworthiness(matrix, labels, positives, formula, iterations=iterations, seed=seed)
 
         # psi-p
         self.assertEqual(1.2428266254044471e-40, model['psi_p']['value'])
