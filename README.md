@@ -6,12 +6,20 @@ named [projection-separability-indices](https://github.com/biomedical-cybernetic
 ## Description
 
 The projection separability indices (PSIs) are statistical-based measures specifically designed to assess and quantify
-the group separability of data samples in a geometrical space of dimensionality reduction analyses based on embedding
-algorithms. Currently, this package implements four different PSIs for evaluating group separability:
+the group separability of data samples in a geometrical space (
+see [Measuring group-separability in geometrical space for evaluation of pattern recognition and embedding algorithms](https://arxiv.org/abs/1912.12418)
+for more details). For instance, PSIs can be used to evaluate the quality of the dimensionality reduction analyses
+produced by embedding algorithms. Currently, this package implements four different PSIs for evaluating group
+separability and a statistical test termed _trustworthiness_ (
+see [Nonlinear machine learning pattern recognition and bacteria-metabolite multilayer network analysis of perturbed gastric microbiome](https://www.nature.com/articles/s41467-021-22135-x)
+for a practical example and more details) which is based on a null model to assess the statistical significance of each
+PSI by a p-value.
 
-* **psi-p**: Based on Mann-Whitney U-test p-value [1]
-* **psi-roc**: Based on Area Under the ROC-Curve [2]
-* **psi-pr**: Based on Area Under the Precision-Recall Curve [3]
+### PSI measures
+
+* **psi-p**: Based on the Mann-Whitney U-test p-value [1]
+* **psi-roc**: Based on the Area Under the ROC-Curve [2]
+* **psi-pr**: Based on the Area Under the Precision-Recall Curve [3]
 * **psi-mcc**: Based on the Matthews Correlation Coefficient [4]
 
 > [1] H. B. Mann and D. R. Whitney, “On a Test of Whether one of Two Random Variables is Stochastically Larger than the Other,” Ann. Math. Stat., vol. 18, no. 1, pp. 50–60, 1947, doi: 10.1214/aoms/1177730491.
@@ -32,7 +40,7 @@ pip install psis
 
 ## Usage
 
-### Compute indices
+### Compute PSIs
 
 ```python
 import numpy as np
@@ -41,7 +49,8 @@ from psis import indices
 """
 Simulated embedding obtained by a dimension reduction method.
 In this example, only two dimensions are used. however, an arbitrary 
-number of dimensions can be evaluated
+number of dimensions can be evaluated.
+Note: It is expected to receive samples as rows and the features/variables as columns.
 """
 embedding = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
 
@@ -85,16 +94,16 @@ print(psi_pr)
 print(psi_mcc)
 ```
 
-### Computing null model
+### Compute trustworthiness of PSIs
 
 ```python
 from sklearn.datasets import load_iris
 from psis import indices
 
-# Sample data. Details at: https://scikit-learn.org/stable/datasets/toy_dataset.html
+# Sample data. Details at https://scikit-learn.org/stable/datasets/toy_dataset.html
 data = load_iris()
 
-# Number of iteration for the Null model
+# Number of iterations for the Null model
 iterations = 50
 
 # Random seed (for reproducibility)
@@ -102,16 +111,17 @@ seed = 10
 
 # Group separability evaluation.
 # In this example, the evaluation of group separability is directly
-# assessed in the High-Dimensional (HD) space
-results = indices.compute_null_model(data.data, data.target, iterations=iterations, seed=seed)
+# assessed in the High-Dimensional (HD) space, and the trustworthiness of
+# each PSI (together with details about their null model evaluation) is returned
+results = indices.compute_trustworthiness(data.data, data.target, iterations=iterations, seed=seed)
 
 # Accessing the results
 # In this example only 'psi_roc' is evaluated. The other indices' results can be 
 # accessed in the same way
-print(results['psi_roc']['value']) # Initial index value
-print(results['psi_roc']['min']) # Minimum permuted value
-print(results['psi_roc']['max']) # Maximum permuted value
-print(results['psi_roc']['p_value']) # Separability significance (p-value)
+print(results['psi_roc']['value'])  # Initial index value
+print(results['psi_roc']['min'])  # Minimum permuted value
+print(results['psi_roc']['max'])  # Maximum permuted value
+print(results['psi_roc']['p_value'])  # Separability significance (p-value)
 ```
 
 ## Issues
