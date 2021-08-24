@@ -5,15 +5,9 @@ named [projection-separability-indices](https://github.com/biomedical-cybernetic
 
 ## Description
 
-The projection separability indices (PSIs) are statistical-based measures specifically designed to assess and quantify
-the group separability of data samples in a geometrical space (
-see [Measuring group-separability in geometrical space for evaluation of pattern recognition and embedding algorithms](https://arxiv.org/abs/1912.12418)
-for more details). For instance, PSIs can be used to evaluate the quality of the dimensionality reduction analyses
-produced by embedding algorithms. Currently, this package implements four different PSIs for evaluating group
-separability and a statistical test termed _trustworthiness_ (
-see [Nonlinear machine learning pattern recognition and bacteria-metabolite multilayer network analysis of perturbed gastric microbiome](https://www.nature.com/articles/s41467-021-22135-x)
-for a practical example and more details) which is based on a null model to assess the statistical significance of each
-PSI by a p-value.
+The projection separability indices (PSIs) are projection-based statistical measures specifically designed to assess and quantify the group separability of data samples in a geometrical space. For instance, PSIs can be used to evaluate the quality of the dimensionality reduction analyses produced by embedding algorithms. Currently, this package implements four different PSIs for evaluating group separability and a statistical test termed _trustworthiness_, which is based on a null model to assess the statistical significance of each PSI by a _p_-value.
+
+For more details see [Measuring group-separability in geometrical space for evaluation of pattern recognition and dimension reduction algorithms](https://arxiv.org/abs/1912.12418).
 
 ### PSI measures
 
@@ -48,7 +42,7 @@ from psis import indices
 
 """
 Simulated embedding obtained by a dimension reduction method.
-In this example, only two dimensions are used. however, an arbitrary 
+In this example, only two dimensions are used. however, an arbitrary
 number of dimensions can be evaluated.
 Note: It is expected to receive samples as rows and the features/variables as columns.
 """
@@ -56,21 +50,21 @@ embedding = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 1
 
 """
 List of sample labels (groups/classes).
-In this example, only two different groups are used. However, an arbitrary 
+In this example, only two different groups are used. However, an arbitrary
 number of classes can be evaluated
 """
 labels = np.array(['group1', 'group1', 'group1', 'group1', 'group2', 'group2', 'group2', 'group2'])
 
 """
 List of positive samples.
-Depending on the study, positive classes are usually ranked as 
-the labels for which a particular prediction is desired. 
+Depending on the study, positive classes are usually ranked as
+the labels for which a particular prediction is desired.
 
-For instance: 
+For instance:
 - sick patients (positive class) versus controls (negative class)
 - burnout (positive class), depression (positive class), versus control (negative class)
- 
-If you are not sure which are your positive classes, then omit this input and the 
+
+If you are not sure which are your positive classes, then omit this input and the
 algorithm will take the groups with the lower number of samples as positive
 """
 positives = np.array(['group1'])
@@ -116,7 +110,7 @@ seed = 10
 results = indices.compute_trustworthiness(data.data, data.target, iterations=iterations, seed=seed)
 
 # Accessing the results
-# In this example only 'psi_roc' is evaluated. The other indices' results can be 
+# In this example only 'psi_roc' is evaluated. The other indices' results can be
 # accessed in the same way
 print(results['psi_roc']['value'])  # Initial index value
 print(results['psi_roc']['min'])  # Minimum permuted value
