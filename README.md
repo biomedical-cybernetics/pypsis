@@ -1,7 +1,6 @@
 # Projection Separability Indices
 
-*This python package is based on the MATLAB project
-named [projection-separability-indices](https://github.com/biomedical-cybernetics/projection-separability-indices).*
+*This python package is based on the MATLAB project named [projection-separability-indices](https://github.com/biomedical-cybernetics/projection-separability-indices).*
 
 ## Description
 
