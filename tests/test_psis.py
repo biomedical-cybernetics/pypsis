@@ -13,7 +13,7 @@ class TestTrustworthinessComputation(unittest.TestCase):
         iterations = 50
         seed = 100
 
-        model = indices.compute_trustworthiness(matrix, labels, positives, formula, iterations=iterations, seed=seed)
+        model = indices.compute_trustworthiness(matrix, labels, positives, center_formula=formula, iterations=iterations, seed=seed)
 
         # psi-p
         self.assertEqual(1.2428266254044471e-40, model['psi_p']['value'])
@@ -99,6 +99,7 @@ class TestIndicesComputation(unittest.TestCase):
             ['sample1', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample2'])
         input_positive = np.array(['sample1'])
         input_formula = 'median'
+        input_projection_type = 'centroid'
 
         expected_psi_p = 0.0286
         expected_psi_roc = 1.0000
@@ -108,6 +109,7 @@ class TestIndicesComputation(unittest.TestCase):
         actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
                                                                                            input_labels,
                                                                                            input_positive,
+                                                                                           input_projection_type,
                                                                                            input_formula)
 
         self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
