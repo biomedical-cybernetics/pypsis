@@ -6,8 +6,7 @@
 
 The projection separability indices (PSIs) are projection-based statistical measures specifically designed to assess and quantify the group separability of data samples in a geometrical space. For instance, PSIs can be used to evaluate the quality of the dimensionality reduction analyses produced by embedding algorithms. Currently, this package implements four different PSIs for evaluating group separability and a statistical test termed _trustworthiness_, which is based on a null model to assess the statistical significance of each PSI by a _p_-value.
 
-For more details see [Measuring group separability in geometrical space for evaluation of pattern recognition and dimension reduction algorithms](https://arxiv.org/abs/1912.12418)
-.
+For more details see [Measuring group separability in geometrical space for evaluation of pattern recognition and dimension reduction algorithms](https://arxiv.org/abs/1912.12418).
 
 ### PSI measures
 
