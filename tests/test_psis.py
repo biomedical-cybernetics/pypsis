@@ -9,14 +9,15 @@ from tests import sample_data
 
 class TestTrustworthinessComputation(unittest.TestCase):
 
-    def test_trustworthiness(self):
+    def test_centroid_based_trustworthiness(self):
         matrix, labels, positives = sample_data._swiss_roll_sample_data()
+        projection = 'centroid'
         formula = 'median'
         iterations = 50
         seed = 100
 
-        model = indices.compute_trustworthiness(matrix, labels, positives, center_formula=formula,
-                                                iterations=iterations, seed=seed)
+        model = indices.compute_trustworthiness(matrix, labels, positives, projection_type=projection,
+                                                center_formula=formula, iterations=iterations, seed=seed)
 
         # psi-p
         self.assertEqual(1.2428266254044471e-40, model['psi_p']['value'])
@@ -44,6 +45,43 @@ class TestTrustworthinessComputation(unittest.TestCase):
         self.assertEqual(0.10585904641997314, model['psi_mcc']['max'])
         self.assertEqual(0.008667971955796558, model['psi_mcc']['min'])
         self.assertEqual(0.02324139114770061, model['psi_mcc']['std'])
+        self.assertEqual(0.0196078431372549, model['psi_mcc']['p_value'])
+
+    def test_lda_based_trustworthiness(self):
+        matrix, labels, positives = sample_data._swiss_roll_sample_data()
+        projection = 'lda'
+        iterations = 50
+        seed = 100
+
+        model = indices.compute_trustworthiness(matrix, labels, positives, projection_type=projection,
+                                                iterations=iterations, seed=seed)
+
+        # psi-p
+        self.assertEqual(1.009261421351576e-40, model['psi_p']['value'])
+        self.assertEqual(0.6521271550825026, model['psi_p']['max'])
+        self.assertEqual(0.010606992074642272, model['psi_p']['min'])
+        self.assertEqual(0.1627033162824601, model['psi_p']['std'])
+        self.assertEqual(0.0196078431372549, model['psi_p']['p_value'])
+
+        # psi-roc
+        self.assertEqual(0.9176549415996585, model['psi_roc']['value'])
+        self.assertEqual(0.5816329751950958, model['psi_roc']['max'])
+        self.assertEqual(0.513258579532901, model['psi_roc']['min'])
+        self.assertEqual(0.015973959781501835, model['psi_roc']['std'])
+        self.assertEqual(0.0196078431372549, model['psi_roc']['p_value'])
+
+        # psi-pr
+        self.assertEqual(0.818340188219321, model['psi_pr']['value'])
+        self.assertEqual(0.3271676715034102, model['psi_pr']['max'])
+        self.assertEqual(0.2864985337058604, model['psi_pr']['min'])
+        self.assertEqual(0.00936130564040644, model['psi_pr']['std'])
+        self.assertEqual(0.0196078431372549, model['psi_pr']['p_value'])
+
+        # psi-mcc
+        self.assertEqual(0.6401887507956918, model['psi_mcc']['value'])
+        self.assertEqual(0.11584620474627294, model['psi_mcc']['max'])
+        self.assertEqual(0.014460273138448517, model['psi_mcc']['min'])
+        self.assertEqual(0.025160919960162023, model['psi_mcc']['std'])
         self.assertEqual(0.0196078431372549, model['psi_mcc']['p_value'])
 
 

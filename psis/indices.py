@@ -152,8 +152,8 @@ def _compute_auc_aupr(labels, scores, positives):
     return auc, aupr
 
 
-def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, center_formula='median', iterations=1,
-                            seed=None):
+def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, projection_type='centroid',
+                            center_formula='median', iterations=1, seed=None):
     """Compute the trustworthiness of all projection separability indices (PSIs) based on a null model
 
     Parameters
@@ -173,6 +173,11 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
             - burnout (positive class), depression (positive class), versus control (negative class)
         If not provided, then the algorithm will take the groups with the lower number of samples as
         positive classes.
+    projection_type: str
+        Base approach for projecting the points
+        Options are:
+            - centroid [default]
+            - lda
     center_formula: str
         Base approach for finding the groups centroids.
         Options are:
@@ -221,6 +226,7 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
     Warnings
     -------
     warn:
+        - If an invalid projection type is inputted
         - If an invalid center formula is inputted
 
     """
@@ -228,7 +234,8 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
     if iterations <= 0:
         raise ValueError("invalid number of iterations: it must be a positive number higher than zero")
 
-    psi_p, psi_roc, psi_pr, psi_mcc = compute_psis(data_matrix, sample_labels, positive_classes, center_formula)
+    psi_p, psi_roc, psi_pr, psi_mcc = compute_psis(data_matrix, sample_labels, positive_classes, projection_type,
+                                                   center_formula)
     initial_values = dict(psi_p=psi_p, psi_roc=psi_roc, psi_pr=psi_pr, psi_mcc=psi_mcc)
 
     total_samples = len(sample_labels)
@@ -241,7 +248,7 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
         permuted_positions = np.random.permutation(total_samples)
         permuted_samples = sample_labels[permuted_positions]
         perm_p, perm_roc, perm_pr, perm_mcc = compute_psis(data_matrix, permuted_samples, positive_classes,
-                                                           center_formula)
+                                                           projection_type, center_formula)
         permutations['psi_p'] = np.append(permutations['psi_p'], perm_p)
         permutations['psi_roc'] = np.append(permutations['psi_roc'], perm_roc)
         permutations['psi_pr'] = np.append(permutations['psi_pr'], perm_pr)
@@ -292,11 +299,16 @@ def compute_psis(data_matrix, sample_labels, positive_classes=None, projection_t
             - burnout (positive class), depression (positive class), versus control (negative class)
         If not provided, then the algorithm will take the groups with the lower number of samples as
         positive classes.
+    projection_type: str
+        Base approach for projecting the points
+        Options are:
+            - centroid [default]
+            - lda
     center_formula: str
-        Base approach for finding the groups centroids.
+        Base approach for finding the groups centroids. Only valid if projection_type is centroid.
         Options are:
             - mean
-            - median [default]:
+            - median [default]
             - mode
         If an invalid center formula is inputted, then median will be applied by default
 
@@ -326,6 +338,7 @@ def compute_psis(data_matrix, sample_labels, positive_classes=None, projection_t
     Warnings
     -------
     warn:
+        - If an invalid projection type is inputted
         - If an invalid center formula is inputted
 
     """
