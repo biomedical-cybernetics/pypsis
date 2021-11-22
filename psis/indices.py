@@ -26,14 +26,6 @@ def _find_positive_classes(sample_labels):
     return positives
 
 
-def _nchoosek(n, k):
-    if k == 0:
-        r = 1
-    else:
-        r = n / k * _nchoosek(n - 1, k - 1)
-    return round(r)
-
-
 def _compute_mcc(labels, scores, positives):
     total_positive = np.sum(labels == positives)
     total_negative = np.sum(labels != positives)
