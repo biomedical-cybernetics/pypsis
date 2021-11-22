@@ -41,7 +41,7 @@ from psis import indices
 
 """
 Simulated embedding obtained by a dimension reduction method.
-In this example, only two dimensions are used. however, an arbitrary
+In this example, only two dimensions are used. However, an arbitrary 
 number of dimensions can be evaluated.
 Note: It is expected to receive samples as rows and the features/variables as columns.
 """
@@ -50,7 +50,7 @@ embedding = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 1
 """
 List of sample labels (groups/classes).
 In this example, only two different groups are used. However, an arbitrary
-number of classes can be evaluated
+number of classes can be evaluated.
 """
 labels = np.array(['group1', 'group1', 'group1', 'group1', 'group2', 'group2', 'group2', 'group2'])
 
@@ -69,7 +69,17 @@ algorithm will take the groups with the lower number of samples as positive
 positives = np.array(['group1'])
 
 """
-Base approach for defining the groups' centroids.
+Base approach for projecting the points.
+
+Available options are:
+- centroid [default]
+- lda
+"""
+projection_type = 'centroid'
+
+"""
+Base approach for defining the groups' centroids. 
+NOTE: Only applicable if projection_type is centroid, ignored otherwise.
 
 Available options are:
 - mean
@@ -79,7 +89,7 @@ Available options are:
 center_formula = 'median'
 
 # Group separability evaluation
-psi_p, psi_roc, psi_pr, psi_mcc = indices.compute_psis(embedding, labels, positives, center_formula)
+psi_p, psi_roc, psi_pr, psi_mcc = indices.compute_psis(embedding, labels, positives, projection_type, center_formula)
 
 print(psi_p)
 print(psi_roc)
@@ -102,11 +112,14 @@ iterations = 50
 # Random seed (for reproducibility)
 seed = 10
 
+# Linear Discriminant Analysis (LDA) based projection
+projection = 'lda'
+
 # Group separability evaluation.
 # In this example, the evaluation of group separability is directly
 # assessed in the High-Dimensional (HD) space, and the trustworthiness of
 # each PSI (together with details about their null model evaluation) is returned
-results = indices.compute_trustworthiness(data.data, data.target, iterations=iterations, seed=seed)
+results = indices.compute_trustworthiness(data.data, data.target, iterations=iterations, projection_type=projection, seed=seed)
 
 # Accessing the results
 # In this example only 'psi_roc' is evaluated. The other indices' results can be

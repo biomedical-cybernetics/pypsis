@@ -1,7 +1,10 @@
+import itertools
 import warnings
+
 import numpy as np
 from scipy import stats
 from sklearn import metrics
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 
 def _mode_distribution(data_clustered):
@@ -21,14 +24,6 @@ def _find_positive_classes(sample_labels):
     max_pos = np.bincount(positions).argmax()
     positives = np.delete(positives, max_pos)
     return positives
-
-
-def _nchoosek(n, k):
-    if k == 0:
-        r = 1
-    else:
-        r = n / k * _nchoosek(n - 1, k - 1)
-    return round(r)
 
 
 def _compute_mcc(labels, scores, positives):
@@ -58,7 +53,7 @@ def _create_line_between_centroids(centroid1, centroid2):
     return line
 
 
-def _project_points_on_line(point, line):
+def _project_point_on_line(point, line):
     # centroids
     a = line[0]
     b = line[1]
@@ -94,6 +89,51 @@ def _convert_points_to_one_dimension(points):
     return v
 
 
+def _centroid_based_projection(data_group_a, data_group_b, center_formula):
+    if center_formula != 'mean' and center_formula != 'median' and center_formula != 'mode':
+        warnings.warn('invalid center formula: median will be applied by default', SyntaxWarning)
+        center_formula = 'median'
+
+    centroid_a = centroid_b = None
+    if center_formula == 'median':
+        centroid_a = np.median(data_group_a, axis=0)
+        centroid_b = np.median(data_group_b, axis=0)
+    elif center_formula == 'mean':
+        centroid_a = np.mean(data_group_a, axis=0)
+        centroid_b = np.mean(data_group_b, axis=0)
+    elif center_formula == 'mode':
+        centroid_a = _mode_distribution(data_group_a)
+        centroid_b = _mode_distribution(data_group_b)
+
+    if centroid_a is None or centroid_b is None:
+        raise RuntimeError('impossible to set clusters centroids')
+    elif (centroid_a == centroid_b).all():
+        raise RuntimeError('clusters have the same centroid: no line can be traced between them')
+
+    centroids_line = _create_line_between_centroids(centroid_a, centroid_b)
+    pairwise_data = np.vstack([data_group_a, data_group_b])
+
+    total_points, total_dimensions = np.shape(pairwise_data)
+    projection = np.empty([0, total_dimensions])
+    for ox in range(total_points):
+        projected_point = _project_point_on_line(pairwise_data[ox], centroids_line)
+        projection = np.vstack([projection, projected_point])
+
+    return projection
+
+
+def _lda_based_projection(pairwise_data, pairwise_samples):
+    mdl = LinearDiscriminantAnalysis(solver='svd', store_covariance=True, n_components=1)
+    mdl.fit(pairwise_data, pairwise_samples)
+    mu = np.mean(pairwise_data, axis=0)
+    # projecting data points onto the first discriminant axis
+    centered = pairwise_data - mu
+    projection = np.dot(centered, mdl.scalings_ * np.transpose(mdl.scalings_))
+    projection = projection + mu
+
+    return projection
+
+
 def _compute_mannwhitney(scores_c1, scores_c2):
     mw = stats.mannwhitneyu(scores_c1, scores_c2)  # method="exact"
     return mw
@@ -112,8 +152,8 @@ def _compute_auc_aupr(labels, scores, positives):
     return auc, aupr
 
 
-def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, center_formula='median', iterations=1,
-                            seed=None):
+def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, projection_type='centroid',
+                            center_formula='median', iterations=1, seed=None):
     """Compute the trustworthiness of all projection separability indices (PSIs) based on a null model
 
     Parameters
@@ -133,6 +173,11 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
             - burnout (positive class), depression (positive class), versus control (negative class)
         If not provided, then the algorithm will take the groups with the lower number of samples as
         positive classes.
+    projection_type: str
+        Base approach for projecting the points
+        Options are:
+            - centroid [default]
+            - lda
     center_formula: str
         Base approach for finding the groups centroids.
         Options are:
@@ -181,6 +226,7 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
     Warnings
     -------
     warn:
+        - If an invalid projection type is inputted
         - If an invalid center formula is inputted
 
     """
@@ -188,7 +234,8 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
     if iterations <= 0:
         raise ValueError("invalid number of iterations: it must be a positive number higher than zero")
 
-    psi_p, psi_roc, psi_pr, psi_mcc = compute_psis(data_matrix, sample_labels, positive_classes, center_formula)
+    psi_p, psi_roc, psi_pr, psi_mcc = compute_psis(data_matrix, sample_labels, positive_classes, projection_type,
+                                                   center_formula)
     initial_values = dict(psi_p=psi_p, psi_roc=psi_roc, psi_pr=psi_pr, psi_mcc=psi_mcc)
 
     total_samples = len(sample_labels)
@@ -201,7 +248,7 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
         permuted_positions = np.random.permutation(total_samples)
         permuted_samples = sample_labels[permuted_positions]
         perm_p, perm_roc, perm_pr, perm_mcc = compute_psis(data_matrix, permuted_samples, positive_classes,
-                                                           center_formula)
+                                                           projection_type, center_formula)
         permutations['psi_p'] = np.append(permutations['psi_p'], perm_p)
         permutations['psi_roc'] = np.append(permutations['psi_roc'], perm_roc)
         permutations['psi_pr'] = np.append(permutations['psi_pr'], perm_pr)
@@ -231,7 +278,8 @@ def compute_trustworthiness(data_matrix, sample_labels, positive_classes=None, c
     return model_results
 
 
-def compute_psis(data_matrix, sample_labels, positive_classes=None, center_formula='median'):
+def compute_psis(data_matrix, sample_labels, positive_classes=None, projection_type='centroid',
+                 center_formula='median'):
     """Compute all projection separability indices (PSIs)
 
     Parameters
@@ -251,11 +299,16 @@ def compute_psis(data_matrix, sample_labels, positive_classes=None, center_formu
             - burnout (positive class), depression (positive class), versus control (negative class)
         If not provided, then the algorithm will take the groups with the lower number of samples as
         positive classes.
+    projection_type: str
+        Base approach for projecting the points
+        Options are:
+            - centroid [default]
+            - lda
     center_formula: str
-        Base approach for finding the groups centroids.
+        Base approach for finding the groups centroids. Only valid if projection_type is centroid.
         Options are:
             - mean
-            - median [default]:
+            - median [default]
             - mode
         If an invalid center formula is inputted, then median will be applied by default
 
@@ -285,6 +338,7 @@ def compute_psis(data_matrix, sample_labels, positive_classes=None, center_formu
     Warnings
     -------
     warn:
+        - If an invalid projection type is inputted
         - If an invalid center formula is inputted
 
     """
@@ -300,81 +354,63 @@ def compute_psis(data_matrix, sample_labels, positive_classes=None, center_formu
     elif type(positive_classes) is not np.ndarray:
         raise TypeError("invalid input type: the positive_classes must be a numpy.ndarray")
 
-    if center_formula != 'mean' and center_formula != 'median' and center_formula != 'mode':
-        warnings.warn('invalid center formula: median will be applied', SyntaxWarning)
-        center_formula = 'median'
+    if projection_type != 'centroid' and projection_type != 'lda':
+        warnings.warn('invalid projection type: centroid will be used by default', SyntaxWarning)
+        projection_type = 'centroid'
 
     # checking range of dimensions
     total_samples, dimensions_number = data_matrix.shape
     if len(sample_labels) != total_samples:
         raise IndexError("the number of sample labels does not match the number of rows in the data matrix")
 
-    # obtaining unique sample labels
-    unique_labels = np.unique(sample_labels)
-    number_unique_labels = len(unique_labels)
+    # obtaining groups
+    sample_groups = np.unique(sample_labels)
+    total_sample_groups = len(sample_groups)
 
     # clustering data according to sample labels
-    sorted_labels = np.empty([0], dtype=str)
+    samples_clustered = list()
     data_clustered = list()
-    for k in range(number_unique_labels):
-        idxes = np.where(sample_labels == unique_labels[k])
-        sorted_labels = np.append(sorted_labels, sample_labels[idxes])
+    for k in range(total_sample_groups):
+        idxes = np.where(sample_labels == sample_groups[k])
+        samples_clustered.append(sample_labels[idxes])
         data_clustered.append(data_matrix[idxes])
 
     mw_values = np.empty([0])
     auc_values = np.empty([0])
     aupr_values = np.empty([0])
     mcc_values = np.empty([0])
-    clusters_projections = [np.empty([0, dimensions_number])] * number_unique_labels
-    pairwise_group_combinations = _nchoosek(number_unique_labels, 2)
 
-    n = 0
-    m = 1
-    for index_group_combination in range(pairwise_group_combinations):
-        centroid_cluster_1 = centroid_cluster_2 = None
-        if center_formula == 'median':
-            centroid_cluster_1 = np.median(data_clustered[n], axis=0)
-            centroid_cluster_2 = np.median(data_clustered[m], axis=0)
-        elif center_formula == 'mean':
-            centroid_cluster_1 = np.mean(data_clustered[n], axis=0)
-            centroid_cluster_2 = np.mean(data_clustered[m], axis=0)
-        elif center_formula == 'mode':
-            centroid_cluster_1 = _mode_distribution(data_clustered[n])
-            centroid_cluster_2 = _mode_distribution(data_clustered[m])
+    pairwise_group_combinations = list(itertools.combinations(range(0, total_sample_groups), 2))
+    for index_group_combination in range(len(pairwise_group_combinations)):
+        idx_group_a = pairwise_group_combinations[index_group_combination][0]
+        data_group_a = data_clustered[idx_group_a]
+        samples_group_a = samples_clustered[idx_group_a]
+        size_group_a = len(data_group_a)
 
-        if centroid_cluster_1 is None or centroid_cluster_2 is None:
-            raise RuntimeError('impossible to set clusters centroids')
-        elif (centroid_cluster_1 == centroid_cluster_2).all():
-            raise RuntimeError('clusters have the same centroid: no line can be traced between them')
+        idx_group_b = pairwise_group_combinations[index_group_combination][1]
+        data_group_b = data_clustered[idx_group_b]
+        samples_group_b = samples_clustered[idx_group_b]
+        size_group_b = len(data_group_b)
 
-        clusters_line = _create_line_between_centroids(centroid_cluster_1, centroid_cluster_2)
+        projected_points = None
+        if projection_type == 'centroid':
+            projected_points = _centroid_based_projection(data_group_a, data_group_b, center_formula)
+        elif projection_type == 'lda':
+            pairwise_data = np.vstack([data_group_a, data_group_b])
+            pairwise_samples = np.append(samples_group_a, samples_group_b)
+            projected_points = _lda_based_projection(pairwise_data, pairwise_samples)
+        else:
+            raise RuntimeError('invalid projection type')
 
-        clusters_projections[n] = clusters_projections[m] = np.empty([0, dimensions_number])
+        dp_scores = _convert_points_to_one_dimension(projected_points)
+        dp_scores_group_a = dp_scores[0:size_group_a]
+        dp_scores_group_b = dp_scores[size_group_a:size_group_a + size_group_b]
 
-        for o in range(np.shape(data_clustered[n])[0]):
-            proj = _project_points_on_line(data_clustered[n][o], clusters_line)
-            clusters_projections[n] = np.vstack([clusters_projections[n], proj])
-        for o in range(np.shape(data_clustered[m])[0]):
-            proj = _project_points_on_line(data_clustered[m][o], clusters_line)
-            clusters_projections[m] = np.vstack([clusters_projections[m], proj])
-
-        size_cluster_n = len(data_clustered[n])
-        size_cluster_m = len(data_clustered[m])
-
-        cluster_projection_1d = _convert_points_to_one_dimension(
-            np.vstack([clusters_projections[n], clusters_projections[m]]))
-
-        dp_scores_cluster_1 = cluster_projection_1d[0:size_cluster_n]
-        dp_scores_cluster_2 = cluster_projection_1d[size_cluster_n:size_cluster_n + size_cluster_m]
-        dp_scores = np.concatenate([dp_scores_cluster_1, dp_scores_cluster_2])
-
-        mw = _compute_mannwhitney(dp_scores_cluster_1, dp_scores_cluster_2)
+        mw = _compute_mannwhitney(dp_scores_group_a, dp_scores_group_b)
         mw_values = np.append(mw_values, mw.pvalue)
 
         # sample membership
-        samples_cluster_n = sample_labels[np.where(sample_labels == unique_labels[n])[0]]
-        samples_cluster_m = sample_labels[np.where(sample_labels == unique_labels[m])[0]]
-        sample_labels_membership = np.concatenate((samples_cluster_n, samples_cluster_m), axis=0)
+        sample_labels_membership = np.concatenate((samples_group_a, samples_group_b), axis=0)
 
         current_positive_class = None
         for o in range(len(positive_classes)):
@@ -392,13 +428,8 @@ def compute_psis(data_matrix, sample_labels, positive_classes=None, center_formu
         mcc = _compute_mcc(sample_labels_membership, dp_scores, current_positive_class)
         mcc_values = np.append(mcc_values, mcc)
 
-        m = m + 1
-        if m > (number_unique_labels - 1):
-            n = n + 1
-            m = n + 1
-
     delta_degrees_of_freedom = 0
-    if number_unique_labels > 2:
+    if total_sample_groups > 2:
         delta_degrees_of_freedom = 1
 
     psi_p = (np.mean(mw_values) + np.std(mw_values, ddof=delta_degrees_of_freedom)) / (
