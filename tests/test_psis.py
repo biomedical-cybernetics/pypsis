@@ -1,10 +1,10 @@
 import unittest
+
 import numpy as np
-import sklearn.discriminant_analysis
+from sklearn.datasets import load_iris
 
 from psis import indices
 from tests import sample_data
-from sklearn.datasets import load_iris
 
 
 class TestTrustworthinessComputation(unittest.TestCase):

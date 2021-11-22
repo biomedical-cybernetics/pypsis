@@ -1,11 +1,10 @@
-import warnings
-import numpy as np
 import itertools
+import warnings
+
+import numpy as np
 from scipy import stats
-from scipy import linalg as sla
 from sklearn import metrics
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-import matplotlib.pyplot as plt
 
 
 def _mode_distribution(data_clustered):
