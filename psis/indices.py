@@ -2,7 +2,10 @@ import warnings
 import numpy as np
 import itertools
 from scipy import stats
+from scipy import linalg as sla
 from sklearn import metrics
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+import matplotlib.pyplot as plt
 
 
 def _mode_distribution(data_clustered):
@@ -129,7 +132,15 @@ def _centroid_based_projection(data_group_a, data_group_b, center_formula):
 
 
 def _lda_based_projection(pairwise_data, pairwise_samples):
-    return
+    mdl = LinearDiscriminantAnalysis(solver='svd', store_covariance=True, n_components=1)
+    mdl.fit(pairwise_data, pairwise_samples)
+    mu = np.mean(pairwise_data, axis=0)
+    # projecting data points onto the first discriminant axis
+    centered = pairwise_data - mu
+    projection = np.dot(centered, mdl.scalings_ * np.transpose(mdl.scalings_))
+    projection = projection + mu
+
+    return projection
 
 
 def _compute_mannwhitney(scores_c1, scores_c2):
@@ -382,7 +393,7 @@ def compute_psis(data_matrix, sample_labels, positive_classes=None, projection_t
             projected_points = _centroid_based_projection(data_group_a, data_group_b, center_formula)
         elif projection_type == 'lda':
             pairwise_data = np.vstack([data_group_a, data_group_b])
-            pairwise_samples = np.vstack([samples_group_a, samples_group_b])
+            pairwise_samples = np.append(samples_group_a, samples_group_b)
             projected_points = _lda_based_projection(pairwise_data, pairwise_samples)
         else:
             raise RuntimeError('invalid projection type')
