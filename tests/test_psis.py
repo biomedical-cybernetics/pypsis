@@ -1,8 +1,10 @@
 import unittest
 import numpy as np
+import sklearn.discriminant_analysis
 
 from psis import indices
 from tests import sample_data
+from sklearn.datasets import load_iris
 
 
 class TestTrustworthinessComputation(unittest.TestCase):
@@ -13,7 +15,8 @@ class TestTrustworthinessComputation(unittest.TestCase):
         iterations = 50
         seed = 100
 
-        model = indices.compute_trustworthiness(matrix, labels, positives, center_formula=formula, iterations=iterations, seed=seed)
+        model = indices.compute_trustworthiness(matrix, labels, positives, center_formula=formula,
+                                                iterations=iterations, seed=seed)
 
         # psi-p
         self.assertEqual(1.2428266254044471e-40, model['psi_p']['value'])
@@ -93,7 +96,7 @@ class TestIndicesComputation(unittest.TestCase):
 
         self.assertWarns(SyntaxWarning, indices.compute_psis, input_matrix, input_labels, input_positive, input_formula)
 
-    def test_perfect_separation(self):
+    def test_centroid_based_perfect_separation(self):
         input_matrix = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
         input_labels = np.array(
             ['sample1', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample2'])
@@ -117,7 +120,55 @@ class TestIndicesComputation(unittest.TestCase):
         self.assertEqual(expected_psi_pr, round(actual_psi_pr, 4))
         self.assertEqual(expected_psi_mcc, round(actual_psi_mcc, 4))
 
-    def test_mixed_separation(self):
+    def test_lda_based_perfect_separation(self):
+        input_matrix = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
+        input_labels = np.array(
+            ['sample1', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample2'])
+        input_positive = np.array(['sample1'])
+        input_formula = ''  # ignored
+        input_projection_type = 'lda'
+
+        expected_psi_p = 0.0286
+        expected_psi_roc = 1.0000
+        expected_psi_pr = 1.0000
+        expected_psi_mcc = 1.0000
+
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
+                                                                                           input_positive,
+                                                                                           input_projection_type,
+                                                                                           input_formula)
+
+        self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
+        self.assertEqual(expected_psi_roc, round(actual_psi_roc, 4))
+        self.assertEqual(expected_psi_pr, round(actual_psi_pr, 4))
+        self.assertEqual(expected_psi_mcc, round(actual_psi_mcc, 4))
+
+    def test_lda_based_high_dimensional_separation(self):
+        input_matrix = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
+        input_labels = np.array(
+            ['sample1', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample2'])
+        input_positive = np.array(['sample1'])
+        input_formula = ''  # ignored
+        input_projection_type = 'lda'
+
+        expected_psi_p = 0.0286
+        expected_psi_roc = 1.0000
+        expected_psi_pr = 1.0000
+        expected_psi_mcc = 1.0000
+
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
+                                                                                           input_positive,
+                                                                                           input_projection_type,
+                                                                                           input_formula)
+
+        self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
+        self.assertEqual(expected_psi_roc, round(actual_psi_roc, 4))
+        self.assertEqual(expected_psi_pr, round(actual_psi_pr, 4))
+        self.assertEqual(expected_psi_mcc, round(actual_psi_mcc, 4))
+
+    def test_centroid_based_mixed_separation(self):
         input_matrix = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
         input_labels = np.array(
             ['sample2', 'sample1', 'sample1', 'sample1', 'sample2', 'sample2', 'sample2', 'sample1'])
@@ -161,12 +212,13 @@ class TestIndicesComputation(unittest.TestCase):
         self.assertEqual(expected_psi_pr, round(actual_psi_pr, 4))
         self.assertEqual(expected_psi_mcc, round(actual_psi_mcc, 4))
 
-    def test_multiclass_separation(self):
+    def test_lda_based_multiclass_separation(self):
         input_matrix = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [10, 11], [12, 13], [14, 15], [16, 17]])
         input_labels = np.array(
             ['sample1', 'sample1', 'sample2', 'sample2', 'sample3', 'sample3', 'sample4', 'sample4'])
         input_positive = np.array(['sample2', 'sample3', 'sample4'])
-        input_formula = 'median'
+        input_formula = ''  # ignored
+        input_projection_type = 'lda'
 
         expected_psi_p = 0.3333
         expected_psi_roc = 1.0000
@@ -176,6 +228,39 @@ class TestIndicesComputation(unittest.TestCase):
         actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
                                                                                            input_labels,
                                                                                            input_positive,
+                                                                                           input_projection_type,
+                                                                                           input_formula)
+
+        self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
+        self.assertEqual(expected_psi_roc, round(actual_psi_roc, 4))
+        self.assertEqual(expected_psi_pr, round(actual_psi_pr, 4))
+        self.assertEqual(expected_psi_mcc, round(actual_psi_mcc, 4))
+
+    def test_lda_based_high_dimensional_separation(self):
+        data = load_iris()
+
+        samples = np.empty(len(data.target), dtype=object)
+        samples[data.target == 0] = data.target_names[0]
+        samples[data.target == 1] = data.target_names[1]
+        samples[data.target == 2] = data.target_names[2]
+        positives = np.unique(samples)
+        positives = np.delete(positives, 0)
+
+        input_matrix = data.data
+        input_labels = samples
+        input_positive = positives
+        input_formula = ''  # ignored
+        input_projection = 'lda'
+
+        expected_psi_p = 0.0000
+        expected_psi_roc = 0.9975
+        expected_psi_pr = 0.9976
+        expected_psi_mcc = 0.9644
+
+        actual_psi_p, actual_psi_roc, actual_psi_pr, actual_psi_mcc = indices.compute_psis(input_matrix,
+                                                                                           input_labels,
+                                                                                           input_positive,
+                                                                                           input_projection,
                                                                                            input_formula)
 
         self.assertEqual(expected_psi_p, round(actual_psi_p, 4))
